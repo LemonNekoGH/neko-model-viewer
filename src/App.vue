@@ -1,41 +1,78 @@
 <template>
-  <v-app>
-    <v-app-bar app flat>
-      <v-toolbar-title>模型查看器</v-toolbar-title>
-      <v-spacer></v-spacer>
-      <input type="file" style="display: none" ref="fileInput" @change="onFileChanged">
-      <v-btn outlined color="primary" @click="onUploadClick" :loading="selecting">
-        <v-icon left>mdi-upload</v-icon>
-        上传文件进行预览
-      </v-btn>
-    </v-app-bar>
-    <v-main>
-      <div class="main">
-        <v-divider></v-divider>
-        <div class="progress-container" v-if="loading">
-          <v-progress-circular indeterminate></v-progress-circular>
-        </div>
-        <canvas v-if="scene" ref="modelView" class="model-viewer"></canvas>
-      </div>
-    </v-main>
-  </v-app>
+  <div class="app">
+    <header class="header">
+      <span class="header-title">
+        模型查看器
+      </span>
+      <div class="spacer"></div>
+      <input style="display: none" type="file" ref="fileInput" @change="onFileChanged">
+      <button class="upload-btn" @click="onUploadClick">
+        {{ scene ? '更换要预览的文件' : '上传文件进行预览' }}
+      </button>
+      <div class="w-10px"></div>
+    </header>
+    <main class="main">
+      <canvas ref="modelView" class="model-viewer"></canvas>
+    </main>
+  </div>
 </template>
 <script lang="ts">
 import Vue from 'vue'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-import { Group, WebGLRenderer } from 'three'
+import {
+  DirectionalLight,
+  Group,
+  PerspectiveCamera,
+  Scene,
+  sRGBEncoding,
+  WebGLRenderer
+} from 'three'
+import * as dat from 'dat.gui'
 
 /**
  * 模型查看器实体类
  */
 class ModelViewer {
   renderer: WebGLRenderer
+  scene: Scene
+  camera: PerspectiveCamera
+  debug: dat.GUI
 
   constructor (group: Group, canvas: HTMLCanvasElement) {
+    this.scene = new Scene()
+    this.camera = new PerspectiveCamera(50, canvas.offsetWidth / canvas.offsetHeight, 0.1, 1000)
+    this.camera.position.set(0, 0, 5)
+    this.addLights()
+
+    this.scene.add(group)
+
     this.renderer = new WebGLRenderer({
-      canvas: canvas
+      canvas: canvas,
+      antialias: true
     })
+    this.renderer.outputEncoding = sRGBEncoding
+    // 设置像素比率防止画面太糊
+    this.renderer.setPixelRatio(window.devicePixelRatio)
+
+    window.addEventListener('resize', () => {
+      this.camera.aspect = canvas.offsetWidth / canvas.offsetHeight
+      this.camera.updateProjectionMatrix()
+    })
+
+    // 开始渲染
+    const animate = () => {
+      requestAnimationFrame(animate)
+      this.renderer.render(this.scene, this.camera)
+    }
+
+    animate()
+  }
+
+  addLights () {
+    const light = new DirectionalLight()
+    light.position.set(0, 0, 1)
+    this.scene.add(light)
   }
 }
 
@@ -44,8 +81,9 @@ export default Vue.extend({
     return {
       loading: false,
       selecting: false,
-      scene: null as Group,
-      viewer: null as ModelViewer
+      scene: null as Group | null,
+      viewer: null as ModelViewer | null,
+      file: null as File | null
     }
   },
   methods: {
@@ -53,8 +91,12 @@ export default Vue.extend({
      * 当上传按钮点击时
      */
     onUploadClick () {
+      if (!this.$refs.fileInput) {
+        return
+      }
       this.selecting = true
-      this.$refs.fileInput.click()
+      const fileInput: HTMLInputElement = this.$refs.fileInput as HTMLInputElement
+      fileInput.click()
       // 监听一次「焦点变化」事件
       window.addEventListener('focus', () => {
         // 当选择框被关闭时，将 selecting 设置为 false
@@ -77,6 +119,8 @@ export default Vue.extend({
         return
       }
       const file: File = files[0]
+      // 把当前文件对象保存起来
+      this.file = file
       const dacroLoader = new DRACOLoader()
       dacroLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/libs/draco/')
       const loader = new GLTFLoader()
@@ -91,27 +135,66 @@ export default Vue.extend({
     loadComplete (model: GLTF) {
       this.loading = false
       this.scene = model.scene
-      this.viewer = new ModelViewer(this.scene, this.$refs.modelView)
+      this.$nextTick(() => {
+        this.viewer = new ModelViewer(this.scene!, this.$refs.modelView as HTMLCanvasElement)
+      })
     },
     loadError (ev: ErrorEvent) {
       this.loading = false
-      this.$msg.error('请确保上传的文件格式正确')
     }
   }
 })
 </script>
 <style lang="less">
+html {
+  width: 100%;
+  height: 100%;
+}
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+.app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 .progress-container {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+.header {
+  height: 56px;
+  border-bottom: 2px black solid;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  &-title {
+    font-size: 24px;
+    font-weight: bold;
+    padding: 10px;
+  }
+}
+.upload-btn {
+  padding: 5px;
+  border: 2px solid black;
+  background: white;
+  font-weight: bold;
+}
+.spacer {
+  flex: 1;
+}
+.w-10px {
+  width: 10px;
+}
 .main {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%;
+  flex: 1;
 }
 .model-viewer {
   flex: 1;
