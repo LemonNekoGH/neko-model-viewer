@@ -6,8 +6,11 @@
       </span>
       <div class="spacer"></div>
       <input style="display: none" type="file" ref="fileInput" @change="onFileChanged">
-      <button class="upload-btn" @click="onUploadClick">
-        {{ scene ? '更换要预览的文件' : '上传文件进行预览' }}
+      <button class="btn" @click="onUploadClick">
+        <div class="btn-content">
+          <i class="fas fa-folder-open"></i>
+          {{ scene ? '更换要预览的文件' : '上传文件进行预览' }}
+        </div>
       </button>
       <div class="w-10px"></div>
     </header>
@@ -28,7 +31,8 @@ import {
   sRGBEncoding,
   WebGLRenderer
 } from 'three'
-import * as dat from 'dat.gui'
+import gsap from 'gsap'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
 /**
  * 模型查看器实体类
@@ -37,13 +41,14 @@ class ModelViewer {
   renderer: WebGLRenderer
   scene: Scene
   camera: PerspectiveCamera
-  debug: dat.GUI
+  rotationSpeed: number
 
   constructor (group: Group, canvas: HTMLCanvasElement) {
     this.scene = new Scene()
     this.camera = new PerspectiveCamera(50, canvas.offsetWidth / canvas.offsetHeight, 0.1, 1000)
     this.camera.position.set(0, 0, 5)
     this.addLights()
+    this.rotationSpeed = 0.1
 
     this.scene.add(group)
 
@@ -53,7 +58,7 @@ class ModelViewer {
     })
     this.renderer.outputEncoding = sRGBEncoding
     // 设置像素比率防止画面太糊
-    this.renderer.setPixelRatio(window.devicePixelRatio)
+    this.renderer.setPixelRatio(4)
 
     window.addEventListener('resize', () => {
       this.camera.aspect = canvas.offsetWidth / canvas.offsetHeight
@@ -66,7 +71,46 @@ class ModelViewer {
       this.renderer.render(this.scene, this.camera)
     }
 
+    this.listenEvents(canvas, group)
+    // this.addTransformControl(this.camera, canvas, group)
+
     animate()
+  }
+
+  /**
+   * 添加变化控制器
+   */
+  addTransformControl (camera: PerspectiveCamera, canvas: HTMLCanvasElement, group: Group) {
+    const control = new TransformControls(camera, canvas)
+    control.attach(group)
+    control.enabled = true
+    control.setMode('rotate')
+    this.scene.add(control)
+
+    control.addEventListener('objectChange', (ev) => {
+      console.log(group.rotation.x, group.rotation.y, group.rotation.z)
+    })
+  }
+
+  /**
+   * 添加各种事件的监听器
+   */
+  listenEvents (canvas: HTMLCanvasElement, group: Group) {
+    // 鼠标是否按下
+    let mouseDown = false
+    canvas.addEventListener('mousedown', () => {
+      mouseDown = true
+    })
+    canvas.addEventListener('mouseup', () => {
+      mouseDown = false
+    })
+    canvas.addEventListener('mousemove', (ev: MouseEvent) => {
+      if (mouseDown) {
+        // 如果鼠标按下，视为拖动事件
+        group.rotateX(ev.movementY * this.rotationSpeed)
+        group.rotateY(ev.movementX * this.rotationSpeed)
+      }
+    })
   }
 
   addLights () {
@@ -84,6 +128,19 @@ export default Vue.extend({
       scene: null as Group | null,
       viewer: null as ModelViewer | null,
       file: null as File | null
+    }
+  },
+  watch: {
+    /**
+     * 监听场景变化
+     * @param value
+     */
+    scene (value: Group | null) {
+      if (value) {
+        this.viewer = new ModelViewer(value, this.$refs.modelView as HTMLCanvasElement)
+      } else {
+        this.viewer = null
+      }
     }
   },
   methods: {
@@ -135,11 +192,11 @@ export default Vue.extend({
     loadComplete (model: GLTF) {
       this.loading = false
       this.scene = model.scene
-      this.$nextTick(() => {
-        this.viewer = new ModelViewer(this.scene!, this.$refs.modelView as HTMLCanvasElement)
-      })
     },
     loadError (ev: ErrorEvent) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(ev.message)
+      }
       this.loading = false
     }
   }
@@ -179,11 +236,21 @@ body {
     padding: 10px;
   }
 }
-.upload-btn {
-  padding: 5px;
-  border: 2px solid black;
+.btn {
+  box-sizing: border-box;
   background: white;
-  font-weight: bold;
+  padding: 0;
+  border: 2px solid black;
+  &-content {
+    padding: 5px 5px;
+    background: white;
+    font-weight: bold;
+    transition: all 250ms;
+    &:hover {
+      background: black;
+      color: white;
+    }
+  }
 }
 .spacer {
   flex: 1;

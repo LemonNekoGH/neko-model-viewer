@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import App from './App.vue'
 import './registerServiceWorker'
+import '@fortawesome/fontawesome-free/css/all.min.css'
 
 Vue.config.productionTip = false
 
