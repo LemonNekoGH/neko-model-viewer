@@ -14,7 +14,7 @@
       </button>
       <div class="w-10px"></div>
     </header>
-    <main class="main">
+    <main class="main" @drop.prevent="onDrop" @dragover.prevent="onDragOver">
       <canvas ref="modelView" class="model-viewer"></canvas>
     </main>
   </div>
@@ -24,101 +24,9 @@ import Vue from 'vue'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import {
-  DirectionalLight,
-  Group,
-  PerspectiveCamera,
-  Scene,
-  sRGBEncoding,
-  WebGLRenderer
+  Group
 } from 'three'
-import gsap from 'gsap'
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-
-/**
- * 模型查看器实体类
- */
-class ModelViewer {
-  renderer: WebGLRenderer
-  scene: Scene
-  camera: PerspectiveCamera
-  rotationSpeed: number
-
-  constructor (group: Group, canvas: HTMLCanvasElement) {
-    this.scene = new Scene()
-    this.camera = new PerspectiveCamera(50, canvas.offsetWidth / canvas.offsetHeight, 0.1, 1000)
-    this.camera.position.set(0, 0, 5)
-    this.addLights()
-    this.rotationSpeed = 0.1
-
-    this.scene.add(group)
-
-    this.renderer = new WebGLRenderer({
-      canvas: canvas,
-      antialias: true
-    })
-    this.renderer.outputEncoding = sRGBEncoding
-    // 设置像素比率防止画面太糊
-    this.renderer.setPixelRatio(4)
-
-    window.addEventListener('resize', () => {
-      this.camera.aspect = canvas.offsetWidth / canvas.offsetHeight
-      this.camera.updateProjectionMatrix()
-    })
-
-    // 开始渲染
-    const animate = () => {
-      requestAnimationFrame(animate)
-      this.renderer.render(this.scene, this.camera)
-    }
-
-    this.listenEvents(canvas, group)
-    // this.addTransformControl(this.camera, canvas, group)
-
-    animate()
-  }
-
-  /**
-   * 添加变化控制器
-   */
-  addTransformControl (camera: PerspectiveCamera, canvas: HTMLCanvasElement, group: Group) {
-    const control = new TransformControls(camera, canvas)
-    control.attach(group)
-    control.enabled = true
-    control.setMode('rotate')
-    this.scene.add(control)
-
-    control.addEventListener('objectChange', (ev) => {
-      console.log(group.rotation.x, group.rotation.y, group.rotation.z)
-    })
-  }
-
-  /**
-   * 添加各种事件的监听器
-   */
-  listenEvents (canvas: HTMLCanvasElement, group: Group) {
-    // 鼠标是否按下
-    let mouseDown = false
-    canvas.addEventListener('mousedown', () => {
-      mouseDown = true
-    })
-    canvas.addEventListener('mouseup', () => {
-      mouseDown = false
-    })
-    canvas.addEventListener('mousemove', (ev: MouseEvent) => {
-      if (mouseDown) {
-        // 如果鼠标按下，视为拖动事件
-        group.rotateX(ev.movementY * this.rotationSpeed)
-        group.rotateY(ev.movementX * this.rotationSpeed)
-      }
-    })
-  }
-
-  addLights () {
-    const light = new DirectionalLight()
-    light.position.set(0, 0, 1)
-    this.scene.add(light)
-  }
-}
+import { ModelViewer } from '@/model-viewer'
 
 export default Vue.extend({
   data () {
@@ -167,6 +75,9 @@ export default Vue.extend({
      * @param e
      */
     async onFileChanged (e: Event) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(e.type)
+      }
       if (!e.target) {
         return
       }
@@ -198,6 +109,23 @@ export default Vue.extend({
         console.log(ev.message)
       }
       this.loading = false
+    },
+    // 当拖拽目标放下时调用
+    onDrop (ev: DragEvent) {
+      const dataTransfer = ev.dataTransfer
+      if (dataTransfer) {
+        const file = dataTransfer.files.item(0)
+        if (file) {
+          const input = this.$refs.fileInput as HTMLInputElement
+          input.files = dataTransfer.files
+          input.dispatchEvent(new Event('change'))
+        }
+      }
+    },
+    onDragOver (ev: DragEvent) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('drag over')
+      }
     }
   }
 })
