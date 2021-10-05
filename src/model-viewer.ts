@@ -8,14 +8,19 @@ export class ModelViewer {
   renderer: WebGLRenderer
   scene: Scene
   camera: PerspectiveCamera
-  rotationSpeed: number
+  destroyed: boolean
+  logRenderTimes: boolean
+  group: Group
 
   constructor (group: Group, canvas: HTMLCanvasElement) {
+    this.destroyed = false
+    this.logRenderTimes = true
+    this.group = group
+
     this.scene = new Scene()
     this.camera = new PerspectiveCamera(50, canvas.offsetWidth / canvas.offsetHeight, 0.1, 1000)
     this.camera.position.set(0, 0, 5)
     this.addLights()
-    this.rotationSpeed = 0.01
 
     this.scene.add(group)
 
@@ -35,9 +40,18 @@ export class ModelViewer {
     const control = new OrbitControls(this.camera, canvas)
     control.enableDamping = true
 
+    let frames = 0
+
     // 开始渲染
     const animate = () => {
-      requestAnimationFrame(animate)
+      frames++
+      if (frames % 60 === 0 && this.logRenderTimes) {
+        console.log(`Rendered times: ${frames / 60}s`)
+      }
+
+      if (!this.destroyed) {
+        requestAnimationFrame(animate)
+      }
       control.update()
       this.renderer.render(this.scene, this.camera)
     }
@@ -49,5 +63,11 @@ export class ModelViewer {
     const light = new DirectionalLight()
     light.position.set(0, 0, 1)
     this.scene.add(light)
+  }
+
+  setGroup (group: Group): void {
+    this.scene.remove(this.group)
+    this.scene.add(group)
+    this.group = group
   }
 }

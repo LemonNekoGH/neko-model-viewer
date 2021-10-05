@@ -1,15 +1,11 @@
 {
   "name": "neko-model-viewer",
   "version": "1.0.0",
-  "main": "index.js",
-  "repository": "https://github.com/LemonNekoGH/neko-model-viewer.git",
-  "author": "LemonNeko <chheese048@gmail.com>",
   "private": true,
-  "license": "Apache-2.0",
+  "author": "LemonNeko <chheese048@gmail.com>",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build"
   },
   "dependencies": {
     "core-js": "^3.6.5",
@@ -17,7 +13,7 @@
     "gsap": "^3.8.0",
     "register-service-worker": "^1.7.1",
     "three": "^0.132.2",
-    "vue": "^2.6.11"
+    "vue": "^3.2.16"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.15.4",
@@ -25,11 +21,6 @@
     "@types/three": "^0.132.1",
     "@typescript-eslint/eslint-plugin": "^4.18.0",
     "@typescript-eslint/parser": "^4.18.0",
-    "@vue/cli-plugin-babel": "~4.5.0",
-    "@vue/cli-plugin-eslint": "~4.5.0",
-    "@vue/cli-plugin-pwa": "~4.5.0",
-    "@vue/cli-plugin-typescript": "~4.5.0",
-    "@vue/cli-service": "~4.5.0",
     "@vue/eslint-config-standard": "^5.1.2",
     "@vue/eslint-config-typescript": "^7.0.0",
     "eslint": "^6.7.2",
@@ -41,6 +32,12 @@
     "less": "^3.0.4",
     "less-loader": "^5.0.0",
     "typescript": "~4.1.5",
-    "vue-template-compiler": "^2.6.11"
-  }
+    "vue-cli-plugin-vite": "~1.4.11",
+    "vue-template-compiler": "^2.6.11",
+    "@vitejs/plugin-vue": "^1.9.2",
+    "vite": "^2.6.0",
+    "vue-tsc": "^0.3.0"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/LemonNekoGH/neko-model-viewer.git"
 }

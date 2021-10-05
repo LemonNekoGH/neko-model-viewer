@@ -20,15 +20,15 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent, toRaw } from 'vue'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import {
   Group
 } from 'three'
-import { ModelViewer } from '@/model-viewer'
+import { ModelViewer } from './model-viewer'
 
-export default Vue.extend({
+export default defineComponent({
   data () {
     return {
       loading: false,
@@ -45,7 +45,14 @@ export default Vue.extend({
      */
     scene (value: Group | null) {
       if (value) {
-        this.viewer = new ModelViewer(value, this.$refs.modelView as HTMLCanvasElement)
+        if (this.viewer) {
+          this.viewer.setGroup(toRaw(value))
+          if (process.env.NODE_ENV === 'development') {
+            console.log('model changed')
+          }
+        } else {
+          this.viewer = new ModelViewer(toRaw(value), this.$refs.modelView as HTMLCanvasElement)
+        }
       } else {
         this.viewer = null
       }
@@ -137,6 +144,10 @@ html {
 }
 body {
   margin: 0;
+  width: 100%;
+  height: 100%;
+}
+#app {
   width: 100%;
   height: 100%;
 }
