@@ -8,12 +8,10 @@ export class ModelViewer {
   renderer: WebGLRenderer
   scene: Scene
   camera: PerspectiveCamera
-  destroyed: boolean
   logRenderTimes: boolean
   group: Group
 
   constructor (group: Group, canvas: HTMLCanvasElement) {
-    this.destroyed = false
     this.logRenderTimes = true
     this.group = group
 
@@ -49,9 +47,7 @@ export class ModelViewer {
         console.log(`Rendered times: ${frames / 60}s`)
       }
 
-      if (!this.destroyed) {
-        requestAnimationFrame(animate)
-      }
+      requestAnimationFrame(animate)
       control.update()
       this.renderer.render(this.scene, this.camera)
     }
