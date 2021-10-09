@@ -5,7 +5,7 @@
   "author": "LemonNeko <chheese048@gmail.com>",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build && echo 'model-viewer.lemonneko.moe' > dist/CNAME"
   },
   "dependencies": {
     "core-js": "^3.6.5",
