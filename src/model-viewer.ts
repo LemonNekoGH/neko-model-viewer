@@ -1,11 +1,9 @@
 import {
   Color,
-  DirectionalLight,
   Group,
   PerspectiveCamera,
   PMREMGenerator,
   Scene,
-  SpotLight,
   sRGBEncoding,
   WebGLRenderer
 } from 'three'
