@@ -56,7 +56,7 @@ export class ModelViewer {
     // 开始渲染
     const animate = () => {
       frames++
-      if (frames % 60 === 0 && this.logRenderTimes) {
+      if (frames % 60 === 0 && this.logRenderTimes && process.env.NODE_ENV === 'development') {
         console.log(`Rendered times: ${frames / 60}s`)
       }
 

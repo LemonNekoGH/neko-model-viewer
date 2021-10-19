@@ -104,7 +104,10 @@ export default defineComponent({
         this.loading = true
         loader.parse(await file.arrayBuffer(), '', this.loadComplete, this.loadError)
       } catch (e) {
-        this.loadError(e)
+        this.loadError(new ErrorEvent('ModelLoadError', {
+          error: e,
+          message: e.message
+        }))
       }
     },
     loadComplete (model: GLTF) {
@@ -113,7 +116,7 @@ export default defineComponent({
     },
     loadError (ev: ErrorEvent) {
       if (process.env.NODE_ENV === 'development') {
-        console.log(ev.message)
+        console.log(ev.type + ': ' + ev.message)
       }
       this.loading = false
     },
