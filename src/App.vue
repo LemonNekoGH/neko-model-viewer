@@ -9,7 +9,7 @@
       <button class="btn" @click="onUploadClick">
         <div class="btn-content">
           <i class="fas fa-folder-open"></i>
-          {{ scene ? '更换要预览的文件' : '上传文件进行预览' }}
+          {{ gltf ? '更换要预览的文件' : '上传文件进行预览' }}
         </div>
       </button>
       <div class="w-10px"></div>
@@ -23,9 +23,6 @@
 import { defineComponent, toRaw } from 'vue'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-import {
-  Group
-} from 'three'
 import { ModelViewer } from './model-viewer'
 
 export default defineComponent({
@@ -33,7 +30,7 @@ export default defineComponent({
     return {
       loading: false,
       selecting: false,
-      scene: null as Group | null,
+      gltf: null as GLTF | null,
       viewer: null as ModelViewer | null,
       file: null as File | null
     }
@@ -43,10 +40,10 @@ export default defineComponent({
      * 监听场景变化
      * @param value
      */
-    scene (value: Group | null) {
+    gltf (value: GLTF | null) {
       if (value) {
         if (this.viewer) {
-          this.viewer.setGroup(toRaw(value))
+          this.viewer.setModel(toRaw(value))
           if (process.env.NODE_ENV === 'development') {
             console.log('model changed')
           }
@@ -112,7 +109,7 @@ export default defineComponent({
     },
     loadComplete (model: GLTF) {
       this.loading = false
-      this.scene = model.scene
+      this.gltf = model
     },
     loadError (ev: ErrorEvent) {
       if (process.env.NODE_ENV === 'development') {

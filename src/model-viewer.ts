@@ -1,4 +1,5 @@
 import {
+  AnimationMixer, Clock,
   Color,
   Group,
   PerspectiveCamera,
@@ -9,6 +10,8 @@ import {
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment'
+import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
+import { toRaw } from 'vue'
 
 /**
  * 模型查看器实体类
@@ -18,18 +21,22 @@ export class ModelViewer {
   scene: Scene
   camera: PerspectiveCamera
   logRenderTimes: boolean
-  group: Group
+  gltf: GLTF
+  animationMixer: AnimationMixer
+  clock: Clock
+  orbitControl: OrbitControls
+  renderID = 0
 
-  constructor (group: Group, canvas: HTMLCanvasElement) {
+  constructor (gltf: GLTF, canvas: HTMLCanvasElement) {
     this.logRenderTimes = true
-    this.group = group
+    this.gltf = gltf
 
     this.scene = new Scene()
     this.camera = new PerspectiveCamera(50, canvas.offsetWidth / canvas.offsetHeight, 0.1, 2000)
     this.camera.position.set(0, 0, 5)
 
     this.scene.background = new Color(0xD6DFFF)
-    this.scene.add(group)
+    this.scene.add(gltf.scene)
 
     this.renderer = new WebGLRenderer({
       canvas: canvas,
@@ -45,32 +52,48 @@ export class ModelViewer {
 
     window.addEventListener('resize', () => {
       this.camera.aspect = canvas.offsetWidth / canvas.offsetHeight
+      this.renderer.setSize(innerWidth, innerHeight)
       this.camera.updateProjectionMatrix()
     })
 
-    const control = new OrbitControls(this.camera, canvas)
-    control.enableDamping = true
+    this.orbitControl = new OrbitControls(this.camera, canvas)
+    this.orbitControl.enableDamping = true
 
-    let frames = 0
+    this.animationMixer = new AnimationMixer(this.gltf.scene)
+    this.animationMixer.clipAction(gltf.animations[0]).play()
+    this.clock = new Clock()
 
-    // 开始渲染
+    this.startRender()
+  }
+
+  startRender (): void {
     const animate = () => {
-      frames++
-      if (frames % 60 === 0 && this.logRenderTimes && process.env.NODE_ENV === 'development') {
-        console.log(`Rendered times: ${frames / 60}s`)
-      }
+      this.renderID = requestAnimationFrame(animate)
 
-      requestAnimationFrame(animate)
-      control.update()
+      this.animationMixer.update(this.clock.getDelta())
+      this.orbitControl.update()
       this.renderer.render(this.scene, this.camera)
     }
 
-    animate()
+    this.renderID = requestAnimationFrame(animate)
   }
 
-  setGroup (group: Group): void {
-    this.scene.remove(this.group)
-    this.scene.add(group)
-    this.group = group
+  stopRender (): void {
+    cancelAnimationFrame(this.renderID)
+  }
+
+  setModel (gltf: GLTF): void {
+    this.stopRender()
+
+    this.scene.remove(this.gltf.scene)
+    this.scene.add(gltf.scene)
+
+    this.animationMixer = new AnimationMixer(gltf.scene)
+    this.animationMixer.clipAction(gltf.animations[0]).play()
+    this.clock = new Clock()
+
+    this.gltf = gltf
+
+    toRaw(this).startRender()
   }
 }
